@@ -49,7 +49,6 @@ def log_activity(message):
 def generate_key(passkey):
     key = pbkdf2_hmac('sha256', passkey.encode(), SALT, 100000)
     generated_key = urlsafe_b64encode(key)
-    st.write(f"Generated Key for {passkey}: {generated_key}")  # Debugging line
     return generated_key
 
 def hash_password(password):
@@ -58,18 +57,14 @@ def hash_password(password):
 def encrypt_text(text, key):
     cipher = Fernet(generate_key(key))
     encrypted_text = cipher.encrypt(text.encode()).decode()
-    st.write(f"Encrypted Text: {encrypted_text}")  # Debugging line
     return encrypted_text
 
 def decrypt_text(encrypted_text, key):
     try:
         cipher = Fernet(generate_key(key))
-        st.write(f"Key used for decryption: {generate_key(key)}")  # Debugging line
         decrypted = cipher.decrypt(encrypted_text.encode()).decode()
-        st.success(f"Decrypted Data: {decrypted}")  # Debugging line
         return decrypted
     except Exception as e:
-        st.error(f"Decryption failed: {str(e)}")
         return None
 
 def check_password_strength(password):
@@ -83,9 +78,10 @@ def check_password_strength(password):
 # === Load stored data from JSON ===
 stored_data = load_data()
 
-# === PDF Export Function (Separate) ===
+# === PDF Export Function (Save PDF to Server) ===
 def export_all_data_to_pdf(user_data, username):
-    pdf_file = f"{username}_data_export.pdf"
+    # Save the PDF file on the server
+    pdf_file = f"./{username}_data_export.pdf"
     c = canvas.Canvas(pdf_file, pagesize=letter)
     width, height = letter
     text_obj = c.beginText(40, height - 50)
@@ -110,9 +106,10 @@ def export_all_data_to_pdf(user_data, username):
 st.title("🔐 Secure Multi-User Data System")
 menu = ["Home", "Register", "Login", "Store Data", "Retrieve Data", "Export Data"]
 choice = st.sidebar.selectbox("Navigation", menu)
+
 # === Home ===
 if choice == "Home":
-    st.markdown("<h2 style='text-align: center;'>🔐 Welcome to the Secure Multi-User Data System</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'> Welcome to the Secure Multi-User Data System</h2>", unsafe_allow_html=True)
     
     st.markdown("""
     ## 🚀 What You Can Do Here:
@@ -201,6 +198,7 @@ elif choice == "Store Data":
                 st.success("✅ Data encrypted and saved!")
             else:
                 st.error("All fields are required.")
+
 # === Retrieve Data ===
 elif choice == "Retrieve Data":
     if not st.session_state.authenticated_user:
@@ -236,3 +234,6 @@ elif choice == "Export Data":
         if st.button("Export Data"):
             pdf_file = export_all_data_to_pdf(stored_data[st.session_state.authenticated_user]["data"], st.session_state.authenticated_user)
             st.success(f"✅ PDF Exported as {pdf_file}")
+            # Provide download link
+            with open(pdf_file, "rb") as f:
+                st.download_button("Download PDF", f, file_name=pdf_file)
